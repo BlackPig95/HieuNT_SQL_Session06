@@ -3,28 +3,44 @@
 # sửa phòng Room nếu nếu giá trị của cột Price > 5000000 thì
 # tự động chuyển về 5000000 và in ra thông báo
 # ‘Giá phòng lớn nhất 5 triệu’
+set @error = 0;
 DELIMITER //
 create trigger if not exists tr_Check_Price_Value
     before insert
     on quanlykhachsan.room
     for each row
 begin
-    declare exit handler for sqlstate '45000'
-        begin
-        end ;
     if (new.price > 5000000)
     then
         set new.price = 5000000;
-        call print_error_message();
+        set @error = 1;
+        #Signal sqlstate sẽ return 1 warning, nhưng vì cả procedure là
+        #1 khối lệnh thực hiện một lần nên sau khi thực hiện xong
+        #warning trước đó sẽ bị overwrite bởi thông báo mới khi hoàn thành
+        #procedure => Không sử dụng được cách call procedure
+        # call print_error_message();
     end if;
 end //
-create procedure print_error_message()
+
+DELIMITER //
+create trigger tr_Warning_Price_Value
+    after insert
+    on quanlykhachsan.room
+    for each row
 begin
-    signal sqlstate '45000' set message_text  = 'Giá phòng lớn nhất 5 triệu';
+    if(@error =1)
+        then
+            set @error = 0;
+            signal sqlstate '45000' set message_text  = 'Giá phòng lớn nhất 5 triệu';
+    end if ;
 end //
 DELIMITER ;
+select @error;
+
 insert into quanlykhachsan.room (name, status, price, saleprice, createddate, categoryId)
 VALUES ('roomtrigger', 1, 60000000, 1000000, curdate(), 1);
+
+
 # 2.Tạo trigger tr_check_Room_NotAllow khi thực hiện đặt pòng,
 # nếu ngày đến (StartDate) và ngày đi (EndDate) của đơn hiện tại mà
 # phòng đã có người đặt rồi thì báo lỗi
