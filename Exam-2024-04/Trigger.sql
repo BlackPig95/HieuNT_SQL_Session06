@@ -76,26 +76,22 @@ begin
         and new.startdate <= ANY (select enddate
                                   from bookingdetail
                                   where roomId = new.roomId))
+        or (new.enddate >= ANY (select startdate
+                                from bookingdetail
+                                where roomId = new.roomId)
+            and new.enddate <= ANY (select enddate
+                                    from bookingdetail
+                                    where roomId = new.roomId))
     then
         signal sqlstate '45000'
-        set message_text = 'Phòng này đã có người đặt trong thời gian này,
-# vui lòng chọn thời gian khác';
-    elseif(new.enddate >= ANY (select startdate
-                                 from bookingdetail
-                                 where roomId = new.roomId)
-        and new.enddate <= ANY (select enddate
-                                  from bookingdetail
-                                  where roomId = new.roomId))
-        then
-            signal sqlstate '45000'
-                set message_text = 'Phòng này đã có người đặt trong thời gian này,
+            set message_text = 'Phòng này đã có người đặt trong thời gian này,
 # vui lòng chọn thời gian khác';
     end if;
 end //
 DELIMITER ;
 insert into bookingdetail (bookingId, roomId, price, startdate, enddate)
-VALUES (7,1, 200000, '2024-04-25', '2024-04-30');
+VALUES (7, 1, 200000, '2024-04-25', '2024-04-30');
 insert into bookingdetail (bookingId, roomId, price, startdate, enddate)
-VALUES (7,1, 200000, '2024-04-25', '2024-05-1');
+VALUES (7, 1, 200000, '2024-04-25', '2024-05-1');
 insert into bookingdetail (bookingId, roomId, price, startdate, enddate)
-VALUES (7,1, 200000, '2024-04-22', '2024-04-29');
+VALUES (7, 1, 200000, '2024-04-22', '2024-04-29');
